@@ -5,6 +5,7 @@ using UnityEngine;
 public class SC_Globals : MonoBehaviour {
 
 	public Dictionary<string, GameObject> unityObjects;
+	public Dictionary<string, GameObject> buttons;
 	public Sprite yellow;
 	public Sprite red;
 
@@ -33,15 +34,32 @@ public class SC_Globals : MonoBehaviour {
     public void Init()
     {
         unityObjects = new Dictionary<string, GameObject>();
+		buttons = new Dictionary<string, GameObject>();
         GameObject[] _objects = GameObject.FindGameObjectsWithTag("UnityObject");
         foreach (GameObject g in _objects)
         {
             unityObjects.Add(g.name, g);
         }
+		GameObject[] _buttons = GameObject.FindGameObjectsWithTag("Button");
+		foreach (GameObject g in _buttons)
+		{
+			buttons.Add(g.name, g);
+			Debug.Log (g.name);
+		}
 
     }
     // Update is called once per frame
     void Update () {
 		
+	}
+
+	public void updateUnityObjects(){
+		GameObject[] _objects = GameObject.FindGameObjectsWithTag("UnityObject");
+		foreach (GameObject g in _objects)
+		{
+			if(unityObjects.ContainsKey(g.name))
+				unityObjects.Remove(g.name);
+			unityObjects.Add(g.name, g);
+		}
 	}
 }

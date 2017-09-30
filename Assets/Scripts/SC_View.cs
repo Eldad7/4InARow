@@ -26,8 +26,12 @@ public class SC_View : MonoBehaviour {
 
 	public void Init()
 	{
-		for (int i = 0; i < DefinedVariables.ColumnAmount; i++) 
-			for (int j=0; j<DefinedVariables.RowAmount; j++)
+		
+	}
+
+	public void CleanBoard(){
+		for (int i = 0; i < DefinedVariables.RowAmount; i++) 
+			for (int j=0; j<DefinedVariables.ColumnAmount; j++)
 				SetImage (i,j,GameEnums.SlotState.Empty);
 	}
 
@@ -39,15 +43,17 @@ public class SC_View : MonoBehaviour {
 	public void SetImage(string _ObjectName, GameEnums.SlotState _NewState)
 	{
 		Debug.Log (_ObjectName + " " + _NewState);
-		if (_NewState == GameEnums.SlotState.Red) 
-		{
+		if (_NewState == GameEnums.SlotState.Red) {
 			SC_Globals.Instance.unityObjects [_ObjectName].SetActive (true);
 			SC_Globals.Instance.unityObjects [_ObjectName].GetComponent<Image> ().sprite = SC_Globals.Instance.red;
 		}
-		else if (_NewState == GameEnums.SlotState.Yellow) 
-		{
+		if (_NewState == GameEnums.SlotState.Yellow) {
 			SC_Globals.Instance.unityObjects [_ObjectName].SetActive (true);
 			SC_Globals.Instance.unityObjects [_ObjectName].GetComponent<Image> ().sprite = SC_Globals.Instance.yellow;
+		} 
+		if (_NewState == GameEnums.SlotState.Empty){
+			SC_Globals.Instance.unityObjects [_ObjectName].SetActive (true);
+			SC_Globals.Instance.unityObjects [_ObjectName].GetComponent<Image> ().sprite = Resources.Load("barrier",typeof(Sprite)) as Sprite;
 		}
 	}
 
