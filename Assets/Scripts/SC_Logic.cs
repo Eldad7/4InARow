@@ -2,6 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
+using com.shephertz.app42.gaming.multiplayer.client;
+using AssemblyCSharp;
+using com.shephertz.app42.gaming.multiplayer.client.events;
 
 public class SC_Logic : MonoBehaviour {
 
@@ -13,6 +16,7 @@ public class SC_Logic : MonoBehaviour {
 	private GameObject currentPlayer;
 	string Player;
 	bool vertical = false;
+	private bool isMyTurn = false;
     #region Singleton
 
     static SC_Logic instance;
@@ -29,11 +33,26 @@ public class SC_Logic : MonoBehaviour {
     #endregion
     // Use this for initialization
     void Start () {
+		
 		ColumnAmount = DefinedVariables.ColumnAmount;
 		RowAmount = DefinedVariables.RowAmount;
 		//flip = Random.Range(1,42);
 		flip = 4;
 		InitTurn ();
+	}
+
+	void OnEnable()
+	{
+		Listener.OnGameStarted += OnGameStarted;
+		Listener.OnMoveCompleted += OnMoveCompleted;
+		Listener.OnGameStopped += OnGameStopped;
+	}
+
+	void OnDisable()
+	{
+		Listener.OnGameStarted -= OnGameStarted;
+		Listener.OnMoveCompleted -= OnMoveCompleted;
+		Listener.OnGameStopped -= OnGameStopped;
 	}
 	
 	// Update is called once per frame
@@ -114,7 +133,6 @@ public class SC_Logic : MonoBehaviour {
 
     public void DoSlotLogic(int _Index)
     {
-		turn++;
 		string slot = "";
 		int i=0;
 		while( i < RowAmount ) {
@@ -135,6 +153,22 @@ public class SC_Logic : MonoBehaviour {
 		SC_View.Instance.SetImage (slot, currentState);
 		GameEnums.GameState _currentGameState = CheckWinner (_Index,i-1);
 		Debug.Log ("Current Game state: "+_currentGameState);
+		if (isMyTurn) 
+		{
+			Debug.Log ("DoSlotLogic " + _Index);
+			{
+				isMyTurn = false;
+				Dictionary<string,object> _toSend = new Dictionary<string, object> ();
+				_toSend.Add ("UserName", SC_MenuGlobals.userName);
+				_toSend.Add ("Data",_Index);
+				_toSend.Add ("State",currentState);
+
+				string _jsonToSend = MiniJSON.Json.Serialize (_toSend);
+				Debug.Log (_jsonToSend);
+				WarpClient.GetInstance ().sendMove (_jsonToSend);
+				SubmitLogic (_Index);
+			}
+		}
 		if (_currentGameState == GameEnums.GameState.NoWinner) {
 			PassTurn ();
 		}
@@ -177,6 +211,7 @@ public class SC_Logic : MonoBehaviour {
 			Debug.Log ("Winner is " + currentState);
 			SC_View.Instance.SetText ("Text_MatchOverLabel", "Winner is " + currentState);
 		}
+		WarpClient.GetInstance ().stopGame ();
 	}
 
 	public void RestartMatchLogic(){
@@ -400,4 +435,61 @@ public class SC_Logic : MonoBehaviour {
 		yield return new WaitForSeconds (0.2f);
 		rotateObject();
 	}*/
+
+	public void SubmitLogic(int _Index)
+	{
+		turn++;
+		/*SC_View.Instance.SetImage (_Index, currentState);
+
+		GameEnums.GameState _currentGameState = CheckWinner ();
+		if (_currentGameState == GameEnums.GameState.NoWinner)
+			PassTurn ();
+		else MatchOver (_currentGameState);*/
+	}
+
+	public void OnGameStarted(string _Sender,string _RoomId,string _NextTurn)
+	{
+		Debug.Log ("SC_Logic: " + _Sender + " " + _RoomId + " " + _NextTurn);
+		Player = _NextTurn;
+		int _rand = Random.Range (0,2);
+		if (_rand < 1)
+			_rand = -1;
+		currentState = (GameEnums.SlotState)_rand;
+		if (Player == SC_MenuGlobals.userName)
+		{
+			currentState = GameEnums.SlotState.Red;
+			isMyTurn = true;
+		} 
+		else 
+		{
+			currentState = GameEnums.SlotState.Yellow;
+			isMyTurn = false;
+		}
+
+		SC_View.Instance.SetImage ("Image_CurrentTurn",currentState);
+		//SC_View.Instance.SetImage ("Image_MySign",playerState);
+	}
+
+	public void OnMoveCompleted(MoveEvent _Move)
+	{
+		Debug.Log ("OnMoveCompleted " + _Move.getMoveData() + " " + _Move.getNextTurn() + " " + _Move.getSender());
+		if (_Move.getSender () != SC_MenuGlobals.userName && _Move.getMoveData() != null)
+		{
+			Dictionary<string,object> _recievedData = MiniJSON.Json.Deserialize (_Move.getMoveData()) as Dictionary<string,object>;
+			if (_recievedData != null) 
+			{
+				int _index = int.Parse (_recievedData ["Data"].ToString());
+				SubmitLogic (_index);
+			}
+		}
+
+		if(_Move.getNextTurn() == SC_MenuGlobals.userName)
+			isMyTurn = true;
+		else isMyTurn = false;
+	}
+
+	public void OnGameStopped(string _Sender,string _RoomId)
+	{
+		Debug.Log (_Sender + " " + _RoomId);
+	}
 }
