@@ -8,6 +8,7 @@ public class SC_Logic : MonoBehaviour {
 	private int[,] gameStatus;
 	int turn,RowAmount,ColumnAmount;
 	int flip;
+	int flipsDone=0;
 	private GameEnums.SlotState currentState;
 	private GameObject currentPlayer;
 	string Player;
@@ -31,12 +32,7 @@ public class SC_Logic : MonoBehaviour {
 		ColumnAmount = DefinedVariables.ColumnAmount;
 		RowAmount = DefinedVariables.RowAmount;
 		//flip = Random.Range(1,42);
-		flip=3;
-		gameStatus = new int[RowAmount, ColumnAmount];
-		for (int i = 0; i < RowAmount; i++)
-			for (int j = 0; j < ColumnAmount; j++) {
-				gameStatus [i, j] = (int)GameEnums.SlotState.Empty;
-			}
+		flip = 4;
 		InitTurn ();
 	}
 	
@@ -85,11 +81,19 @@ public class SC_Logic : MonoBehaviour {
     }
 	public void InitTurn()
 	{
+		gameStatus = new int[RowAmount, ColumnAmount];
+		for (int i = 0; i < RowAmount; i++)
+			for (int j = 0; j < ColumnAmount; j++) {
+				gameStatus [i, j] = (int)GameEnums.SlotState.Empty;
+			}
 		for (int i = 0; i < RowAmount; i++) {
 			SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].SetActive (false);
+			SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString()].GetComponent<Button>().interactable = false;
 			SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].SetActive (true);
+			SC_Globals.Instance.buttons ["Button" + (i + 1).ToString()].GetComponent<Button>().interactable = true;
 		}
 		SC_Globals.Instance.buttons ["Button7"].SetActive (true);
+		SC_Globals.Instance.buttons ["Button7"].GetComponent<Button>().interactable = true;
 		SC_View.Instance.CleanBoard ();
 		turn = 0;
 		int _rand = Random.Range (0,2);
@@ -100,7 +104,7 @@ public class SC_Logic : MonoBehaviour {
 			Player = "Player 1";
 		else
 			Player = "PC";
-		//SC_Globals.Instance.unityObjects ["Image_MatchOver"].SetActive (false);
+		SC_Globals.Instance.unityObjects ["Image_MatchOver"].SetActive (false);
 		SC_View.Instance.SetImage ("Image_CurrentTurn",currentState);
 		SC_View.Instance.SetText ("Text_CurrentTurn", "Current Turn:" + Player);
 		Debug.Log ("Current Turn is: " + currentState);
@@ -119,8 +123,12 @@ public class SC_Logic : MonoBehaviour {
 			i++;
 		}
 		slot = "Image_Slot" + (i-1).ToString ()+_Index.ToString();
-		if (i==1)
-			SC_Globals.Instance.buttons ["Button"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
+		if (i==1){
+			if (!vertical)
+				SC_Globals.Instance.buttons ["Button"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
+			else
+				SC_Globals.Instance.buttons ["fButton"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
+		}
 		Debug.Log("Added " + (int)currentState + " to gameStatus[" +(i-1).ToString() + "," + _Index.ToString() +"]");  
 		gameStatus [i-1,_Index] = (int)currentState;
 
@@ -152,7 +160,7 @@ public class SC_Logic : MonoBehaviour {
     }
 
 	public void MatchOver(GameEnums.GameState _CurrentGameState){
-		string button = "Bx`utton";
+		string button = "Button";
 		int numOfButtons=8;
 		if (vertical) {
 			button = "fButton";
@@ -172,28 +180,43 @@ public class SC_Logic : MonoBehaviour {
 	}
 
 	public void RestartMatchLogic(){
-		
-		for (int i = 0; i < 7; i++)
-			for (int j = 0; j < ColumnAmount; j++) {
-				gameStatus [i, j] = (int)GameEnums.SlotState.Empty;
-				SC_Globals.Instance.buttons ["Button" + (i+1).ToString()].SetActive (true);
-				SC_Globals.Instance.buttons ["Button" + (i+1).ToString()].GetComponent<Button>().interactable = true;
-				if (i != 6) {
-					SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].SetActive (false);
-					SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].GetComponent<Button> ().interactable = true;
+		SC_Globals.Instance.unityObjects ["Board"].transform.rotation = Quaternion.Euler (transform.localRotation.x, transform.localRotation.y, 0f);
+		if (vertical) {
+			for (int i = 0; i < RowAmount; i++) {
+				for (int j = 0; j < ColumnAmount; j++) {
+					SC_Globals.Instance.unityObjects ["Image_Slot" + i.ToString () + j.ToString ()].name = "Image_Slot" + j.ToString () + (ColumnAmount - i - 1).ToString ();
 				}
-				SC_Globals.Instance.unityObjects ["Image_Slot"+j.ToString()+i.ToString()].SetActive (false);
 			}
+			vertical = false;
+		}
+
+		if (flipsDone > 0) {
+			for (int _flips = 0; _flips < flipsDone; _flips++){	//How many times to flip
+				int _ColumnAmount = RowAmount;
+				int _RowAmount = ColumnAmount;
+				for (int i = 0; i < RowAmount; i++) {
+					for (int j = 0; j < ColumnAmount; j++) {
+						SC_Globals.Instance.unityObjects ["Image_Slot" + i.ToString () + j.ToString()].name = "Image_Slot" + (_RowAmount - 1 - j).ToString () + i.ToString ();
+					}
+				}
+				SC_View.Instance.CleanBoard ();
+				ColumnAmount = _ColumnAmount;
+				RowAmount = _RowAmount;
+				SC_Globals.Instance.updateUnityObjects ();
+			}
+		
+		}
 		InitTurn ();
 	}
 
 	public void DoFlip(){
 		int flips = Random.Range (1, 4);
-		//Debug.Log ("New Angle: " + (flips * 90).ToString () + " Degrees");
+		Debug.Log ("New Angle: " + (flips * 90).ToString () + " Degrees");
+		flipsDone=flips;
 		int[,] newGameStatus;
 		int _ColumnAmount, _RowAmount;
 		for (int _flips = 0; _flips < flips; _flips++){	//How many times to flip
-			StartCoroutine (RotateRight(flips));
+			//StartCoroutine (RotateRight(flips));
 			_ColumnAmount = RowAmount;
 			_RowAmount = ColumnAmount;
 			newGameStatus = new int[_RowAmount, _ColumnAmount];
@@ -221,14 +244,25 @@ public class SC_Logic : MonoBehaviour {
 		//We go over all of the columns to see if the bottom of that row has an space TODO - better logic
 		for (int j = 0; j < ColumnAmount; j++) 
 			DoDrop (j);
-		if (flips!=2){
+		if (flips != 2) {
 			vertical = true;
 			for (int i = 0; i < 7; i++)
 				SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].SetActive (false);
-			for (int i = 0; i < 6; i++) 
+			for (int i = 0; i < 6; i++) {
+				Debug.Log (gameStatus [0, i]);
 				SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].SetActive (true);
+				SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].GetComponent<Button> ().interactable = true;
+				if (gameStatus [0, i] != (int)GameEnums.SlotState.Empty)
+					SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].GetComponent<Button> ().interactable = false;
+			}
+		} else {
+			for (int i = 0; i < 7; i++) {
+				if (gameStatus [0, i] != (int)GameEnums.SlotState.Empty)
+					SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].GetComponent<Button> ().interactable = false;
+				else
+					SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].GetComponent<Button> ().interactable = true;
+			}
 		}
-
 		Debug.Log ("Current Board:");
 		for (int i = 0; i < RowAmount; i++)
 			for (int j = 0; j < ColumnAmount; j++) {
@@ -260,6 +294,7 @@ public class SC_Logic : MonoBehaviour {
 			numOfButtons = 6;
 		}
 		int column = Random.Range (1, numOfButtons+1);
+		Debug.Log ("Computer playing column " + column);
 		if (SC_Globals.Instance.buttons [button + column].GetComponent<Button> ().interactable == true)
 			DoSlotLogic (column-1);
 		else
