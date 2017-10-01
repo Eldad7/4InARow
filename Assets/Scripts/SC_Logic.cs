@@ -2,9 +2,9 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
-using com.shephertz.app42.gaming.multiplayer.client;
+//using com.shephertz.app42.gaming.multiplayer.client;
 using AssemblyCSharp;
-using com.shephertz.app42.gaming.multiplayer.client.events;
+//using com.shephertz.app42.gaming.multiplayer.client.events;
 
 public class SC_Logic : MonoBehaviour {
 
@@ -41,19 +41,19 @@ public class SC_Logic : MonoBehaviour {
 		InitTurn ();
 	}
 
-	void OnEnable()
-	{
-		Listener.OnGameStarted += OnGameStarted;
-		Listener.OnMoveCompleted += OnMoveCompleted;
-		Listener.OnGameStopped += OnGameStopped;
-	}
+	//void OnEnable()
+	//{
+	//	Listener.OnGameStarted += OnGameStarted;
+	//	Listener.OnMoveCompleted += OnMoveCompleted;
+	//	Listener.OnGameStopped += OnGameStopped;
+	//}
 
-	void OnDisable()
-	{
-		Listener.OnGameStarted -= OnGameStarted;
-		Listener.OnMoveCompleted -= OnMoveCompleted;
-		Listener.OnGameStopped -= OnGameStopped;
-	}
+	//void OnDisable()
+	//{
+	//	Listener.OnGameStarted -= OnGameStarted;
+	//	Listener.OnMoveCompleted -= OnMoveCompleted;
+	//	Listener.OnGameStopped -= OnGameStopped;
+	//}
 	
 	// Update is called once per frame
 	void Update () {
@@ -131,49 +131,62 @@ public class SC_Logic : MonoBehaviour {
 			DoComputerTurn ();
 	}
 
+    public int FindWhereToPlace(int _Index)
+    {
+        int i = 0;
+        while (i < RowAmount)
+        {
+            if (gameStatus[i, _Index] != (int)GameEnums.SlotState.Empty)
+                break;
+            i++;
+        }
+        return i;
+    }
+
     public void DoSlotLogic(int _Index)
     {
 		string slot = "";
 		int i=0;
-		while( i < RowAmount ) {
-			if (gameStatus[i,_Index]!=(int)GameEnums.SlotState.Empty)
-				break;
-			i++;
-		}
-		slot = "Image_Slot" + (i-1).ToString ()+_Index.ToString();
-		if (i==1){
-			if (!vertical)
-				SC_Globals.Instance.buttons ["Button"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
-			else
-				SC_Globals.Instance.buttons ["fButton"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
-		}
-		Debug.Log("Added " + (int)currentState + " to gameStatus[" +(i-1).ToString() + "," + _Index.ToString() +"]");  
-		gameStatus [i-1,_Index] = (int)currentState;
+        i = FindWhereToPlace(_Index);
+        slot = "Image_Slot" + (i-1).ToString ()+_Index.ToString();
+        //if (i==1){
+        //	if (!vertical)
+        //		SC_Globals.Instance.buttons ["Button"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
+        //	else
+        //		SC_Globals.Instance.buttons ["fButton"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
+        //}
+        if (i != 0)
+        {
+            Debug.Log("Added " + (int)currentState + " to gameStatus[" + (i - 1).ToString() + "," + _Index.ToString() + "]");
+            gameStatus[i - 1, _Index] = (int)currentState;
 
-		SC_View.Instance.SetImage (slot, currentState);
-		GameEnums.GameState _currentGameState = CheckWinner (_Index,i-1);
-		Debug.Log ("Current Game state: "+_currentGameState);
-		if (isMyTurn) 
-		{
-			Debug.Log ("DoSlotLogic " + _Index);
-			{
-				isMyTurn = false;
-				Dictionary<string,object> _toSend = new Dictionary<string, object> ();
-				_toSend.Add ("UserName", SC_MenuGlobals.userName);
-				_toSend.Add ("Data",_Index);
-				_toSend.Add ("State",currentState);
+            SC_View.Instance.SetImage(slot, currentState);
+            GameEnums.GameState _currentGameState = CheckWinner(_Index, i - 1);
+            Debug.Log("Current Game state: " + _currentGameState);
+            //if (isMyTurn)
+            //{
+            //    Debug.Log("DoSlotLogic " + _Index);
+            //    {
+            //        isMyTurn = false;
+            //        Dictionary<string, object> _toSend = new Dictionary<string, object>();
+            //        _toSend.Add("UserName", SC_MenuGlobals.userName);
+            //        _toSend.Add("Data", _Index);
+            //        _toSend.Add("State", currentState);
 
-				string _jsonToSend = MiniJSON.Json.Serialize (_toSend);
-				Debug.Log (_jsonToSend);
-				WarpClient.GetInstance ().sendMove (_jsonToSend);
-				SubmitLogic (_Index);
-			}
-		}
-		if (_currentGameState == GameEnums.GameState.NoWinner) {
-			PassTurn ();
-		}
-		else
-			MatchOver (_currentGameState);
+            //        string _jsonToSend = MiniJSON.Json.Serialize(_toSend);
+            //        Debug.Log(_jsonToSend);
+            //        WarpClient.GetInstance().sendMove(_jsonToSend);
+            //        SubmitLogic(_Index);
+            //    }
+            //}
+            SC_Globals.Instance.audio["CoinSound"].GetComponent<AudioSource>().Play();
+            if (_currentGameState == GameEnums.GameState.NoWinner)
+            {
+                PassTurn();
+            }
+            else
+                MatchOver(_currentGameState);
+        }
     }
 		
     private void PassTurn()
@@ -209,9 +222,11 @@ public class SC_Logic : MonoBehaviour {
 			SC_View.Instance.SetText ("Text_MatchOverLabel", "Tie");
 		} else {
 			Debug.Log ("Winner is " + currentState);
+            SC_Globals.Instance.audio["GameSound"].GetComponent<AudioSource>().Stop();
+            SC_Globals.Instance.audio["WinnerSound"].GetComponent<AudioSource>().Play();
 			SC_View.Instance.SetText ("Text_MatchOverLabel", "Winner is " + currentState);
 		}
-		WarpClient.GetInstance ().stopGame ();
+		//WarpClient.GetInstance ().stopGame ();
 	}
 
 	public void RestartMatchLogic(){
@@ -245,6 +260,7 @@ public class SC_Logic : MonoBehaviour {
 	}
 
 	public void DoFlip(){
+
 		int flips = Random.Range (1, 4);
 		Debug.Log ("New Angle: " + (flips * 90).ToString () + " Degrees");
 		flipsDone=flips;
@@ -299,6 +315,7 @@ public class SC_Logic : MonoBehaviour {
 			}
 		}
 		Debug.Log ("Current Board:");
+        SC_Globals.Instance.audio["FlipSound"].GetComponent<AudioSource>().Play();
 		for (int i = 0; i < RowAmount; i++)
 			for (int j = 0; j < ColumnAmount; j++) {
 				//Debug.Log ("[" + i + "," + j + "]=" + gameStatus [i, j]);
@@ -329,9 +346,12 @@ public class SC_Logic : MonoBehaviour {
 			numOfButtons = 6;
 		}
 		int column = Random.Range (1, numOfButtons+1);
-		Debug.Log ("Computer playing column " + column);
-		if (SC_Globals.Instance.buttons [button + column].GetComponent<Button> ().interactable == true)
-			DoSlotLogic (column-1);
+        int i = FindWhereToPlace(column);
+        if (i != 0)
+        {
+            Debug.Log("Computer playing column " + column);
+            DoSlotLogic(column - 1);
+        }
 		else
 			DoComputerTurn ();
 	}
@@ -470,23 +490,23 @@ public class SC_Logic : MonoBehaviour {
 		//SC_View.Instance.SetImage ("Image_MySign",playerState);
 	}
 
-	public void OnMoveCompleted(MoveEvent _Move)
-	{
-		Debug.Log ("OnMoveCompleted " + _Move.getMoveData() + " " + _Move.getNextTurn() + " " + _Move.getSender());
-		if (_Move.getSender () != SC_MenuGlobals.userName && _Move.getMoveData() != null)
-		{
-			Dictionary<string,object> _recievedData = MiniJSON.Json.Deserialize (_Move.getMoveData()) as Dictionary<string,object>;
-			if (_recievedData != null) 
-			{
-				int _index = int.Parse (_recievedData ["Data"].ToString());
-				SubmitLogic (_index);
-			}
-		}
+	//public void OnMoveCompleted(MoveEvent _Move)
+	//{
+	//	Debug.Log ("OnMoveCompleted " + _Move.getMoveData() + " " + _Move.getNextTurn() + " " + _Move.getSender());
+	//	if (_Move.getSender () != SC_MenuGlobals.userName && _Move.getMoveData() != null)
+	//	{
+	//		Dictionary<string,object> _recievedData = MiniJSON.Json.Deserialize (_Move.getMoveData()) as Dictionary<string,object>;
+	//		if (_recievedData != null) 
+	//		{
+	//			int _index = int.Parse (_recievedData ["Data"].ToString());
+	//			SubmitLogic (_index);
+	//		}
+	//	}
 
-		if(_Move.getNextTurn() == SC_MenuGlobals.userName)
-			isMyTurn = true;
-		else isMyTurn = false;
-	}
+	//	if(_Move.getNextTurn() == SC_MenuGlobals.userName)
+	//		isMyTurn = true;
+	//	else isMyTurn = false;
+	//}
 
 	public void OnGameStopped(string _Sender,string _RoomId)
 	{

@@ -6,7 +6,8 @@ public class SC_Globals : MonoBehaviour {
 
 	public Dictionary<string, GameObject> unityObjects;
 	public Dictionary<string, GameObject> buttons;
-	public Sprite yellow;
+    public Dictionary<string, GameObject> audio;
+    public Sprite yellow;
 	public Sprite red;
 
 	#region Singleton
@@ -23,10 +24,6 @@ public class SC_Globals : MonoBehaviour {
 
 	#endregion
 
-    // Use this for initialization
-    void Start () {
-		
-	}
     void Awake()
     {
         Init();
@@ -35,6 +32,7 @@ public class SC_Globals : MonoBehaviour {
     {
         unityObjects = new Dictionary<string, GameObject>();
 		buttons = new Dictionary<string, GameObject>();
+        audio = new Dictionary<string, GameObject>();
         GameObject[] _objects = GameObject.FindGameObjectsWithTag("UnityObject");
         foreach (GameObject g in _objects)
         {
@@ -46,12 +44,13 @@ public class SC_Globals : MonoBehaviour {
 			buttons.Add(g.name, g);
 			Debug.Log (g.name);
 		}
-
+        GameObject[] _audio = GameObject.FindGameObjectsWithTag("Audio");
+        foreach (GameObject g in _audio)
+        {
+            audio.Add(g.name, g);
+            Debug.Log(g.name);
+        }
     }
-    // Update is called once per frame
-    void Update () {
-		
-	}
 
 	public void updateUnityObjects(){
 		GameObject[] _objects = GameObject.FindGameObjectsWithTag("UnityObject");

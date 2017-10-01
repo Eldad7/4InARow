@@ -29,11 +29,6 @@ public class SC_MenuLogic : MonoBehaviour
 		Init ();
 	}
 
-	void Start ()
-	{
-	
-	}
-
 	private void Init()
 	{
 		prevScreen = DefinedVariables.MenuScreens.Default;

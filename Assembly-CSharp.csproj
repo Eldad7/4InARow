@@ -6,7 +6,7 @@
     <ProductVersion>10.0.20506</ProductVersion>
     <SchemaVersion>2.0</SchemaVersion>
     <RootNamespace></RootNamespace>
-    <ProjectGuid>{694D5F07-D93C-4365-CAE4-8FC892F65499}</ProjectGuid>
+    <ProjectGuid>{7832A4AF-7B68-4C2B-DFF1-2A3A2D7693E1}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
     <AssemblyName>Assembly-CSharp</AssemblyName>
@@ -57,7 +57,11 @@
      <Compile Include="Assets\Scripts\SC_MenuController.cs" />
      <Compile Include="Assets\Scripts\SC_MenuGlobals.cs" />
      <Compile Include="Assets\Scripts\SC_MenuLogic.cs" />
+     <Compile Include="Assets\Scripts\SC_MenuView.cs" />
      <Compile Include="Assets\Scripts\SC_View.cs" />
+ <Reference Include="Facebook.Unity.Settings">
+ <HintPath>C:/Users/Terry/Documents/repo/4InARow/Library/FacebookSDK/Facebook.Unity.Settings.dll</HintPath>
+ </Reference>
  <Reference Include="UnityEngine.UI">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/GUISystem/UnityEngine.UI.dll</HintPath>
  </Reference>
@@ -78,6 +82,12 @@
  </Reference>
  <Reference Include="UnityEngine.VR">
  <HintPath>C:/Program Files/Unity/Editor/Data/UnityExtensions/Unity/UnityVR/RuntimeEditor/UnityEngine.VR.dll</HintPath>
+ </Reference>
+ <Reference Include="AppWarpUnity">
+ <HintPath>C:/Users/Terry/Documents/repo/4InARow/Assets/DLL/AppWarpUnity.dll</HintPath>
+ </Reference>
+ <Reference Include="Mono.Cecil">
+ <HintPath>C:/Program Files/Unity/Editor/Data/Managed/Mono.Cecil.dll</HintPath>
  </Reference>
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
