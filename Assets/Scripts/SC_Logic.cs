@@ -191,8 +191,9 @@ public class SC_Logic : MonoBehaviour {
 		
     private void PassTurn()
     {
+        turn++;
 		if (turn == flip)
-			DoFlip ();
+            DoFlip();
 		if (currentState == GameEnums.SlotState.Red) {
 			currentState = GameEnums.SlotState.Yellow;
 			Player = "PC";
