@@ -11,7 +11,7 @@ public class DefinedVariables
 
 	public enum MenuScreens
 	{
-		Default,Main,SinglePlayer,Multiplayer,StudentInfo,Options,Loading
+		Default,Main,SinglePlayer,Multiplayer,StudentInfo,Options,Loading,Game
 	};
 
 }

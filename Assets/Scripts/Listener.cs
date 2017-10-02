@@ -290,6 +290,7 @@ namespace AssemblyCSharp
 		public void onUserLeftRoom (RoomData eventObj, string username)
 		{
 			Debug.Log ("onUserLeftRoom : " + username);
+			WarpClient.GetInstance ().stopGame ();
 		}
 
 		public void onUserJoinedRoom (RoomData eventObj, string username)
@@ -327,12 +328,7 @@ namespace AssemblyCSharp
 		public void onChatReceived (ChatEvent eventObj)
 		{
 			Debug.Log(eventObj.getSender() + " sended " + eventObj.getMessage());
-			//			com.shephertz.app42.gaming.multiplayer.client.SimpleJSON.JSONNode msg =  com.shephertz.app42.gaming.multiplayer.client.SimpleJSON.JSON.Parse(eventObj.getMessage());
-			//msg[0] 
-			//			if(eventObj.getSender() != appwarp.username)
-			//			{
-			//				//Log(msg["x"].ToString()+" "+msg["y"].ToString()+" "+msg["z"].ToString());
-			//			}
+			//onChatReceived (eventObj.getMessage());
 		}
 
 		public void onUpdatePeersReceived (UpdateEvent eventObj)
@@ -365,8 +361,10 @@ namespace AssemblyCSharp
 
 		public void onGameStarted(string sender, string roomId, string nextTurn)
 		{
-			if (OnGameStarted != null)
-				OnGameStarted(sender, roomId, nextTurn);
+			Debug.Log ("Starting");
+			if (OnGameStarted != null) {
+				OnGameStarted (sender, roomId, nextTurn);
+			}
 		}
 
 		public void onGameStopped(string sender, string roomId)

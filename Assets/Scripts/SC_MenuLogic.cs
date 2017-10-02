@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
 using com.shephertz.app42.gaming.multiplayer.client;
+using System;
 using AssemblyCSharp;
 using com.shephertz.app42.gaming.multiplayer.client.events;
 
@@ -26,11 +27,18 @@ public class SC_MenuLogic : MonoBehaviour
 
 	void Awake ()
 	{
+		DontDestroyOnLoad (transform.gameObject);
 		Init ();
+	}
+
+	void Start ()
+	{
+	
 	}
 
 	private void Init()
 	{
+		
 		prevScreen = DefinedVariables.MenuScreens.Default;
 		currentScreen = DefinedVariables.MenuScreens.Default;
 
@@ -70,6 +78,25 @@ public class SC_MenuLogic : MonoBehaviour
 		ChangeScreen (DefinedVariables.MenuScreens.Options);
 	}
 
+	public void GameLogicSingle()
+	{
+		Debug.Log ("Screen_Main_Btn_OptionsLogic");
+		SC_MenuGlobals.Instance.multiplayer = false;
+		SC_Globals.Instance.audio ["MenuSound"].GetComponent<AudioSource> ().Stop ();
+		SC_Globals.Instance.audio ["GameSound"].GetComponent<AudioSource> ().Play ();
+		ChangeScreen (DefinedVariables.MenuScreens.Game);
+		SC_Logic.Instance.InitTurn ();
+	}
+
+	public void GameLogicMultiplayer()
+	{
+		Debug.Log ("Screen_Main_Btn_OptionsLogic");
+		SC_MenuGlobals.Instance.multiplayer = true;
+		SC_Globals.Instance.audio ["GameSound"].GetComponent<AudioSource> ().Play ();
+		SC_Globals.Instance.audio ["MenuSound"].GetComponent<AudioSource> ().Stop ();
+		ChangeScreen (DefinedVariables.MenuScreens.Game);
+	}
+
 	public void Screen_Main_Btn_BackLogic()
 	{
 		Debug.Log ("Screen_Main_Btn_BackLogic");
@@ -81,27 +108,18 @@ public class SC_MenuLogic : MonoBehaviour
 	}
 
 	public void Connect_To_Room(){
-		//ChangeScreen (DefinedVariables.MenuScreens.Loading);
+		ChangeScreen (DefinedVariables.MenuScreens.Loading);
 		SC_MenuGlobals.Instance.data = new Dictionary<string, object> ();
 		SC_MenuGlobals.Instance.data.Add ("Password", "12345");
 		WarpClient.initialize (DefinedVariables.apiKey,DefinedVariables.secretKey);
-		Debug.Log ("WarpClient.GetInstance ().AddConnectionRequestListener (SC_MenuGlobals.listener);");
-		WarpClient.GetInstance ().AddConnectionRequestListener (SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddChatRequestListener(SC_MenuGlobals.listener);");
+		WarpClient.GetInstance().AddConnectionRequestListener (SC_MenuGlobals.listener);
 		WarpClient.GetInstance().AddChatRequestListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddUpdateRequestListener(SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddUpdateRequestListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddLobbyRequestListener(SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddLobbyRequestListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddNotificationListener(SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddNotificationListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddRoomRequestListener(SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddRoomRequestListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddZoneRequestListener(SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddZoneRequestListener(SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance().AddTurnBasedRoomRequestListener (SC_MenuGlobals.listener);");
 		WarpClient.GetInstance().AddTurnBasedRoomRequestListener (SC_MenuGlobals.listener);
-		Debug.Log ("WarpClient.GetInstance ().AddConnectionRequestListener (SC_MenuGlobals.listener);");
 
 		if (SC_MenuGlobals.Instance.unityObjects["UserNameText"].GetComponent<Text>().text!="")
 			SC_MenuGlobals.userName = SC_MenuGlobals.Instance.unityObjects["UserNameText"].GetComponent<Text>().text;
@@ -135,6 +153,7 @@ public class SC_MenuLogic : MonoBehaviour
 		unityObjects ["Screen_Options"].SetActive (false);
 		unityObjects ["Screen_Multiplayer"].SetActive (false);
 		unityObjects ["Screen_StudentInfo"].SetActive (false);
+		unityObjects ["Screen_Game"].SetActive (false);
 	}
 
 	private void ChangeScreen(DefinedVariables.MenuScreens _ToScreen)	
@@ -150,15 +169,25 @@ public class SC_MenuLogic : MonoBehaviour
 			case DefinedVariables.MenuScreens.Options:unityObjects ["Screen_Options"].SetActive (false);break;
 			case DefinedVariables.MenuScreens.SinglePlayer:break;
 		case DefinedVariables.MenuScreens.StudentInfo:unityObjects ["Screen_StudentInfo"].SetActive (false); break;
+		case DefinedVariables.MenuScreens.Game:
+			unityObjects ["Screen_Game"].SetActive (false);
+			break;
 		}
 
 		currentScreen = _ToScreen;
 
 		switch(currentScreen)
 		{
-			case DefinedVariables.MenuScreens.Loading:unityObjects ["Screen_Loading"].SetActive (true); break;
+			case DefinedVariables.MenuScreens.Loading:unityObjects ["Screen_Loading"].SetActive (true); 
+			unityObjects ["Screen_Main"].SetActive (true); 
+			unityObjects ["Screen_Title"].GetComponent<Text> ().text = "";
+			break;
 			case DefinedVariables.MenuScreens.Main:
 				unityObjects ["Screen_Main"].SetActive (true); 
+				unityObjects ["Screen_Title"].SetActive (true);
+				unityObjects ["Tex_Background"].SetActive (true);
+				unityObjects ["Screen_Main"].SetActive (true);
+				unityObjects ["Image_Title"].SetActive (true);
 				unityObjects ["Screen_Title"].GetComponent<Text> ().text = "";
 				break;
 			case DefinedVariables.MenuScreens.Multiplayer:
@@ -173,6 +202,13 @@ public class SC_MenuLogic : MonoBehaviour
 			case DefinedVariables.MenuScreens.StudentInfo:
 				unityObjects ["Screen_StudentInfo"].SetActive (true);
 				unityObjects ["Screen_Title"].GetComponent<Text> ().text = "Student Info";
+				break;
+		case DefinedVariables.MenuScreens.Game:
+			unityObjects ["Screen_Game"].SetActive (true);
+			unityObjects ["Screen_Title"].SetActive (false);
+			unityObjects ["Tex_Background"].SetActive (false);
+			unityObjects ["Screen_Main"].SetActive (false);
+			unityObjects ["Image_Title"].SetActive (false);
 				break;
 		}
 	}
@@ -201,6 +237,8 @@ public class SC_MenuLogic : MonoBehaviour
 	{
 		Debug.Log("OnConnect: " + _IsSuccess);
 		SC_MenuView.Instance.SetInfoText("Connected!");
+		SC_MenuGlobals.Instance.multiplayer = true;
+		WarpClient.GetInstance ().GetRoomsInRange (1, 2);
 	}
 
 	public void Btn_PlayLogic()
@@ -291,7 +329,7 @@ public class SC_MenuLogic : MonoBehaviour
 		SC_MenuView.Instance.SetInfoText ("OnUserJoinRoom " + " " + _UserName);
 		if(_UserName != eventObj.getRoomOwner())
 		{
-			WarpClient.GetInstance ().startGame ();
+			WarpClient.GetInstance ().startGame();
 		}
 	}
 
@@ -299,7 +337,13 @@ public class SC_MenuLogic : MonoBehaviour
 	{
 		Debug.Log ("SC_MenuLogic: " + _Sender + " " + _RoomId + " " + _NextTurn);
 		SC_MenuView.Instance.SetInfoText ("OnGameStarted " + _Sender + " " + _RoomId + " " + _NextTurn);
-		SC_MenuGlobals.Instance.unityObjects ["Screen_Menu"].SetActive (false);
-		SC_MenuGlobals.Instance.unityObjects ["Screen_Game"].SetActive (true);
+
+		//SC_MenuController.Instance.Load_Multiplayer();
+		SC_MenuLogic.Instance.ChangeScreen(DefinedVariables.MenuScreens.Game);
+
+	}
+
+	public void LeaveClicked(){
+		ChangeScreen (DefinedVariables.MenuScreens.Main);
 	}
 }

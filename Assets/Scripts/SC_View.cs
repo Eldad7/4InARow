@@ -42,7 +42,6 @@ public class SC_View : MonoBehaviour {
 
 	public void SetImage(string _ObjectName, GameEnums.SlotState _NewState)
 	{
-		Debug.Log (_ObjectName + " " + _NewState);
 		if (_NewState == GameEnums.SlotState.Red) {
 			SC_Globals.Instance.unityObjects [_ObjectName].SetActive (true);
 			SC_Globals.Instance.unityObjects [_ObjectName].GetComponent<Image> ().sprite = SC_Globals.Instance.red;

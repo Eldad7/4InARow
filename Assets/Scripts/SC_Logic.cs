@@ -2,22 +2,26 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine.UI;
-//using com.shephertz.app42.gaming.multiplayer.client;
+using System;
+using com.shephertz.app42.gaming.multiplayer.client;
 using AssemblyCSharp;
-//using com.shephertz.app42.gaming.multiplayer.client.events;
+using com.shephertz.app42.gaming.multiplayer.client.events;
 
 public class SC_Logic : MonoBehaviour {
 
 	private int[,] gameStatus;
 	int turn,RowAmount,ColumnAmount;
-	int flip;
-	int flipsDone=0;
-	private GameEnums.SlotState currentState;
-	private GameObject currentPlayer;
+	int flip=-1, flipsDone=0,flips;
+	public GameEnums.SlotState currentState, myColor;
 	string Player;
 	bool vertical = false;
 	private bool isMyTurn = false;
     #region Singleton
+
+	void Awake(){
+		Debug.Log ("AWAKE!!");
+		Start ();
+	}
 
     static SC_Logic instance;
     public static SC_Logic Instance
@@ -32,28 +36,29 @@ public class SC_Logic : MonoBehaviour {
 
     #endregion
     // Use this for initialization
-    void Start () {
+    public void Start () {
 		
 		ColumnAmount = DefinedVariables.ColumnAmount;
 		RowAmount = DefinedVariables.RowAmount;
-		//flip = Random.Range(1,42);
-		flip = 4;
-		InitTurn ();
+		/*if (!SC_MenuGlobals.Instance.multiplayer==true)
+			InitTurn ();*/
 	}
 
-	//void OnEnable()
-	//{
-	//	Listener.OnGameStarted += OnGameStarted;
-	//	Listener.OnMoveCompleted += OnMoveCompleted;
-	//	Listener.OnGameStopped += OnGameStopped;
-	//}
+	void OnEnable()
+	{
+		Listener.OnGameStarted += OnGameStarted;
+		Listener.OnMoveCompleted += OnMoveCompleted;
+		Listener.OnGameStopped += OnGameStopped;
+	}
 
-	//void OnDisable()
-	//{
-	//	Listener.OnGameStarted -= OnGameStarted;
-	//	Listener.OnMoveCompleted -= OnMoveCompleted;
-	//	Listener.OnGameStopped -= OnGameStopped;
-	//}
+	void OnDisable()
+	{
+		Listener.OnGameStarted -= OnGameStarted;
+		Listener.OnMoveCompleted -= OnMoveCompleted;
+		Listener.OnGameStopped -= OnGameStopped;
+		if (SC_MenuGlobals.Instance.multiplayer)
+			WarpClient.GetInstance ().stopGame ();
+	}
 	
 	// Update is called once per frame
 	void Update () {
@@ -98,14 +103,21 @@ public class SC_Logic : MonoBehaviour {
 			return GameEnums.GameState.Tie;
 		return GameEnums.GameState.NoWinner;
     }
+
 	public void InitTurn()
 	{
+		for (int i = 0; i < 7; i++) {
+			Debug.Log (SC_Globals.Instance.buttons.ContainsKey ("Button" + (i+1).ToString()));
+			if (i!=6)
+				Debug.Log (SC_Globals.Instance.buttons.ContainsKey ("fButton" + (i+1).ToString()));
+		}
 		gameStatus = new int[RowAmount, ColumnAmount];
 		for (int i = 0; i < RowAmount; i++)
 			for (int j = 0; j < ColumnAmount; j++) {
 				gameStatus [i, j] = (int)GameEnums.SlotState.Empty;
 			}
 		for (int i = 0; i < RowAmount; i++) {
+			Debug.Log ("fButton" + (i + 1).ToString ());
 			SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString ()].SetActive (false);
 			SC_Globals.Instance.buttons ["fButton" + (i + 1).ToString()].GetComponent<Button>().interactable = false;
 			SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].SetActive (true);
@@ -113,16 +125,19 @@ public class SC_Logic : MonoBehaviour {
 		}
 		SC_Globals.Instance.buttons ["Button7"].SetActive (true);
 		SC_Globals.Instance.buttons ["Button7"].GetComponent<Button>().interactable = true;
-		SC_View.Instance.CleanBoard ();
+
 		turn = 0;
-		int _rand = Random.Range (0,2);
-		if (_rand < 1)
-			_rand = -1;
-		currentState = (GameEnums.SlotState)_rand;
-		if (currentState == GameEnums.SlotState.Red)
-			Player = "Player 1";
-		else
-			Player = "PC";
+		if (!SC_MenuGlobals.Instance.multiplayer) {
+			flip = UnityEngine.Random.Range(1,42);
+			int _rand = UnityEngine.Random.Range (0,2);
+			if (_rand < 1)
+				_rand = -1;
+			currentState = (GameEnums.SlotState)_rand;
+			if (currentState == GameEnums.SlotState.Red)
+				Player = "Player 1";
+			else
+				Player = "PC";
+		}
 		SC_Globals.Instance.unityObjects ["Image_MatchOver"].SetActive (false);
 		SC_View.Instance.SetImage ("Image_CurrentTurn",currentState);
 		SC_View.Instance.SetText ("Text_CurrentTurn", "Current Turn:" + Player);
@@ -131,106 +146,104 @@ public class SC_Logic : MonoBehaviour {
 			DoComputerTurn ();
 	}
 
-    public int FindWhereToPlace(int _Index)
-    {
-        int i = 0;
-        while (i < RowAmount)
-        {
-            if (gameStatus[i, _Index] != (int)GameEnums.SlotState.Empty)
-                break;
-            i++;
-        }
-        return i;
-    }
-
     public void DoSlotLogic(int _Index)
     {
 		string slot = "";
-		int i=0;
-        i = FindWhereToPlace(_Index);
-        slot = "Image_Slot" + (i-1).ToString ()+_Index.ToString();
-        //if (i==1){
-        //	if (!vertical)
-        //		SC_Globals.Instance.buttons ["Button"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
-        //	else
-        //		SC_Globals.Instance.buttons ["fButton"+(_Index+1).ToString()].GetComponent<Button> ().interactable = false;
-        //}
-        if (i != 0)
-        {
-            Debug.Log("Added " + (int)currentState + " to gameStatus[" + (i - 1).ToString() + "," + _Index.ToString() + "]");
-            gameStatus[i - 1, _Index] = (int)currentState;
+		int i = FindWhereToPlace(_Index);
+		slot = "Image_Slot" + (i - 1).ToString () + _Index.ToString ();
+		/*if (i == 1) {
+			if (!vertical)
+				SC_Globals.Instance.buttons ["Button" + (_Index + 1).ToString ()].GetComponent<Button> ().interactable = false;
+			else
+				SC_Globals.Instance.buttons ["fButton" + (_Index + 1).ToString ()].GetComponent<Button> ().interactable = false;
+		}*/
+		if (i != 0) {
+			
+			Debug.Log ("Added " + (int)currentState + " to gameStatus[" + (i - 1).ToString () + "," + _Index.ToString () + "]");  
+			gameStatus [i - 1, _Index] = (int)currentState;
 
-            SC_View.Instance.SetImage(slot, currentState);
-            GameEnums.GameState _currentGameState = CheckWinner(_Index, i - 1);
-            Debug.Log("Current Game state: " + _currentGameState);
-            //if (isMyTurn)
-            //{
-            //    Debug.Log("DoSlotLogic " + _Index);
-            //    {
-            //        isMyTurn = false;
-            //        Dictionary<string, object> _toSend = new Dictionary<string, object>();
-            //        _toSend.Add("UserName", SC_MenuGlobals.userName);
-            //        _toSend.Add("Data", _Index);
-            //        _toSend.Add("State", currentState);
-
-            //        string _jsonToSend = MiniJSON.Json.Serialize(_toSend);
-            //        Debug.Log(_jsonToSend);
-            //        WarpClient.GetInstance().sendMove(_jsonToSend);
-            //        SubmitLogic(_Index);
-            //    }
-            //}
-            SC_Globals.Instance.audio["CoinSound"].GetComponent<AudioSource>().Play();
-            if (_currentGameState == GameEnums.GameState.NoWinner)
-            {
-                PassTurn();
-            }
-            else
-                MatchOver(_currentGameState);
-        }
+			SC_View.Instance.SetImage (slot, currentState);
+			GameEnums.GameState _currentGameState = CheckWinner (_Index, i - 1);
+			Debug.Log ("Current Game state: " + _currentGameState);
+			SC_Globals.Instance.audio ["CoinSound"].GetComponent<AudioSource> ().Play ();
+			if (_currentGameState == GameEnums.GameState.NoWinner) {
+				PassTurn ();
+			} else
+				MatchOver (_currentGameState);
+		}
     }
+
+	public void submitLogic(int _Index){
+		Debug.Log ("Click");
+		Debug.Log (isMyTurn);
+		if (isMyTurn || !SC_MenuGlobals.Instance.multiplayer)
+		{
+			DoSlotLogic (_Index);
+			if (isMyTurn) {
+				//isMyTurn = false;
+				Dictionary<string,object> _toSend = new Dictionary<string, object> ();
+				_toSend.Add ("UserName", SC_MenuGlobals.userName);
+				_toSend.Add ("Data", _Index);
+				_toSend.Add ("State", currentState);
+				if (flip==-1){
+					int _flip = UnityEngine.Random.Range (1, 42);
+					int _flips = UnityEngine.Random.Range (1, 4);
+					_toSend.Add ("Start", "true");
+					_toSend.Add ("Flip", _flip.ToString ());
+					_toSend.Add ("Flips", _flips.ToString ());
+				}
+				string _jsonToSend = MiniJSON.Json.Serialize (_toSend);
+				Debug.Log (_jsonToSend);
+				WarpClient.GetInstance ().sendMove (_jsonToSend);
+			}
+		}
+	
+	}
 		
     private void PassTurn()
     {
-        turn++;
+		turn++;
+		Debug.Log ("Turn = " + turn + " Flip = " + flip);
 		if (turn == flip)
-            DoFlip();
+			DoFlip ();
 		if (currentState == GameEnums.SlotState.Red) {
 			currentState = GameEnums.SlotState.Yellow;
-			Player = "PC";
+			if (!SC_MenuGlobals.Instance.multiplayer)
+				Player = "PC";
 		} else {
 			currentState = GameEnums.SlotState.Red;
-			Player = "Player 1";
+			if (!SC_MenuGlobals.Instance.multiplayer)
+				Player = "Player 1";
 		}
 		SC_View.Instance.SetImage ("Image_CurrentTurn",currentState);
-		SC_View.Instance.SetText ("Text_CurrentTurn", "Current Turn:" + Player);
-		if (string.Compare (Player, "PC") == 0)
+		SC_View.Instance.SetText ("Text_CurrentTurn", "Current Turn: " + Player);
+		if (string.Compare (Player, "PC") == 0 && !SC_MenuGlobals.Instance.multiplayer)
 			DoComputerTurn ();
     }
 
 	public void MatchOver(GameEnums.GameState _CurrentGameState){
-		string button = "Button";
-		int numOfButtons=8;
-		if (vertical) {
-			button = "fButton";
-			numOfButtons = 7;
+		for (int i = 1; i < 8; i++) {
+			SC_Globals.Instance.buttons ["Button" + i].GetComponent<Button> ().interactable = false;
+			if (i != 7) {
+				SC_Globals.Instance.buttons ["fButton" + i].GetComponent<Button> ().interactable = false;
+				SC_Globals.Instance.buttons ["fButton" + i].SetActive (true);
+			}
 		}
-		for (int i = 1; i < numOfButtons; i++) {
-			SC_Globals.Instance.buttons [button + i.ToString()].GetComponent<Button>().interactable = false;
-		}
+		SC_Globals.Instance.updateButtons ();
 		SC_Globals.Instance.unityObjects ["Image_MatchOver"].SetActive (true);
 		if (_CurrentGameState == GameEnums.GameState.Tie) {
 			Debug.Log ("Tie");
 			SC_View.Instance.SetText ("Text_MatchOverLabel", "Tie");
 		} else {
 			Debug.Log ("Winner is " + currentState);
-            SC_Globals.Instance.audio["GameSound"].GetComponent<AudioSource>().Stop();
-            SC_Globals.Instance.audio["WinnerSound"].GetComponent<AudioSource>().Play();
 			SC_View.Instance.SetText ("Text_MatchOverLabel", "Winner is " + currentState);
+			SC_Globals.Instance.audio["GameSound"].GetComponent<AudioSource>().Stop();
+			SC_Globals.Instance.audio["WinnerSound"].GetComponent<AudioSource>().Play();
 		}
-		//WarpClient.GetInstance ().stopGame ();
 	}
 
 	public void RestartMatchLogic(){
+		Debug.Log ("Restarting Match");
 		SC_Globals.Instance.unityObjects ["Board"].transform.rotation = Quaternion.Euler (transform.localRotation.x, transform.localRotation.y, 0f);
 		if (vertical) {
 			for (int i = 0; i < RowAmount; i++) {
@@ -250,19 +263,20 @@ public class SC_Logic : MonoBehaviour {
 						SC_Globals.Instance.unityObjects ["Image_Slot" + i.ToString () + j.ToString()].name = "Image_Slot" + (_RowAmount - 1 - j).ToString () + i.ToString ();
 					}
 				}
-				SC_View.Instance.CleanBoard ();
 				ColumnAmount = _ColumnAmount;
 				RowAmount = _RowAmount;
 				SC_Globals.Instance.updateUnityObjects ();
 			}
 		
 		}
+		SC_View.Instance.CleanBoard ();
 		InitTurn ();
 	}
 
 	public void DoFlip(){
-
-		int flips = Random.Range (1, 4);
+		Debug.Log ("Do FLIP!");
+		if (!SC_MenuGlobals.Instance.multiplayer)
+			flips = UnityEngine.Random.Range (1, 4);
 		Debug.Log ("New Angle: " + (flips * 90).ToString () + " Degrees");
 		flipsDone=flips;
 		int[,] newGameStatus;
@@ -315,8 +329,8 @@ public class SC_Logic : MonoBehaviour {
 					SC_Globals.Instance.buttons ["Button" + (i + 1).ToString ()].GetComponent<Button> ().interactable = true;
 			}
 		}
+		SC_Globals.Instance.audio["FlipSound"].GetComponent<AudioSource>().Play();
 		Debug.Log ("Current Board:");
-        SC_Globals.Instance.audio["FlipSound"].GetComponent<AudioSource>().Play();
 		for (int i = 0; i < RowAmount; i++)
 			for (int j = 0; j < ColumnAmount; j++) {
 				//Debug.Log ("[" + i + "," + j + "]=" + gameStatus [i, j]);
@@ -346,13 +360,10 @@ public class SC_Logic : MonoBehaviour {
 			button = "fButton";
 			numOfButtons = 6;
 		}
-		int column = Random.Range (1, numOfButtons+1);
-        int i = FindWhereToPlace(column);
-        if (i != 0)
-        {
-            Debug.Log("Computer playing column " + column);
-            DoSlotLogic(column - 1);
-        }
+		int column = UnityEngine.Random.Range (1, numOfButtons+1);
+		Debug.Log ("Computer playing column " + column);
+		if (SC_Globals.Instance.buttons [button + column].GetComponent<Button> ().interactable == true)
+			DoSlotLogic (column-1);
 		else
 			DoComputerTurn ();
 	}
@@ -457,60 +468,107 @@ public class SC_Logic : MonoBehaviour {
 		rotateObject();
 	}*/
 
-	public void SubmitLogic(int _Index)
-	{
-		turn++;
-		/*SC_View.Instance.SetImage (_Index, currentState);
-
-		GameEnums.GameState _currentGameState = CheckWinner ();
-		if (_currentGameState == GameEnums.GameState.NoWinner)
-			PassTurn ();
-		else MatchOver (_currentGameState);*/
-	}
-
 	public void OnGameStarted(string _Sender,string _RoomId,string _NextTurn)
 	{
-		Debug.Log ("SC_Logic: " + _Sender + " " + _RoomId + " " + _NextTurn);
-		Player = _NextTurn;
-		int _rand = Random.Range (0,2);
-		if (_rand < 1)
-			_rand = -1;
-		currentState = (GameEnums.SlotState)_rand;
-		if (Player == SC_MenuGlobals.userName)
-		{
+		Debug.Log ("OnGameStarted LOGIC " + SC_MenuGlobals.userName + " " + _NextTurn);
+		if (_NextTurn == SC_MenuGlobals.userName) {
+			myColor = GameEnums.SlotState.Red;
+			isMyTurn=true;
+		} else {
 			currentState = GameEnums.SlotState.Red;
-			isMyTurn = true;
-		} 
-		else 
-		{
-			currentState = GameEnums.SlotState.Yellow;
+			myColor = GameEnums.SlotState.Yellow;
 			isMyTurn = false;
 		}
-
+		currentState = GameEnums.SlotState.Red;
+		Player = _NextTurn;
+		InitTurn ();
 		SC_View.Instance.SetImage ("Image_CurrentTurn",currentState);
+		SC_MenuGlobals.Instance.unityObjects ["Text_CurrentTurn"].GetComponent<Text> ().text = "Current turn: " + Player;
 		//SC_View.Instance.SetImage ("Image_MySign",playerState);
 	}
 
-	//public void OnMoveCompleted(MoveEvent _Move)
-	//{
-	//	Debug.Log ("OnMoveCompleted " + _Move.getMoveData() + " " + _Move.getNextTurn() + " " + _Move.getSender());
-	//	if (_Move.getSender () != SC_MenuGlobals.userName && _Move.getMoveData() != null)
-	//	{
-	//		Dictionary<string,object> _recievedData = MiniJSON.Json.Deserialize (_Move.getMoveData()) as Dictionary<string,object>;
-	//		if (_recievedData != null) 
-	//		{
-	//			int _index = int.Parse (_recievedData ["Data"].ToString());
-	//			SubmitLogic (_index);
-	//		}
-	//	}
+	public void OnMoveCompleted(MoveEvent _Move)
+	{
+		Debug.Log ("OnMoveCompleted " + _Move.getMoveData() + " " + _Move.getNextTurn() + " " + _Move.getSender());
+		Dictionary<string,object> _recievedData = MiniJSON.Json.Deserialize (_Move.getMoveData()) as Dictionary<string,object>;
+		if (_Move.getSender () != SC_MenuGlobals.userName && _Move.getMoveData() != null)
+		{
+			if (_recievedData != null) 
+			{
+				if (_recievedData.ContainsKey ("Rematch")){
+					if (SC_Globals.Instance.unityObjects ["Text_RestartMatch"].GetComponent<Text> ().text != "requested") {
+						SC_Globals.Instance.unityObjects ["Text_RestartMatch"].GetComponent<Text> ().text = "requested";
+					}
+					else {
+						RequestRematch (false);
+						SC_Globals.Instance.audio ["GameSound"].GetComponent<AudioSource> ().Play ();
+						isMyTurn = true;
+						RestartMatchLogic ();
+					}
+				}
+				else{
+					if (_recievedData.ContainsKey ("Start")) {
+						Debug.Log (_recievedData ["Flip"]);
+						Debug.Log (_recievedData ["Flips"]);
+						flip = Convert.ToInt32 (_recievedData ["Flip"]);
+						flips = Convert.ToInt32 (_recievedData ["Flips"]);
+						Debug.Log (flip);
+					}
+					DoSlotLogic (Convert.ToInt32 (_recievedData ["Data"]));
+					isMyTurn = true;
+				}
+			}
+		}
 
-	//	if(_Move.getNextTurn() == SC_MenuGlobals.userName)
-	//		isMyTurn = true;
-	//	else isMyTurn = false;
-	//}
+		if(_Move.getSender() == SC_MenuGlobals.userName){
+			if (_recievedData.ContainsKey ("Start")) {
+				flip = Convert.ToInt32 (_recievedData ["Flip"]);
+				flips = Convert.ToInt32 (_recievedData ["Flips"]);
+				Debug.Log (flip);
+			}
+			if (!_recievedData.ContainsKey ("Rematch"))
+				isMyTurn = false;
+		}
+		Player = _Move.getNextTurn ();
+	}
 
 	public void OnGameStopped(string _Sender,string _RoomId)
 	{
 		Debug.Log (_Sender + " " + _RoomId);
+		SC_MenuController.Instance.LeaveGame ();
 	}
+
+	public int FindWhereToPlace(int _Index)
+	{
+		int i = 0;
+		while (i < RowAmount)
+		{
+			if (gameStatus[i, _Index] != (int)GameEnums.SlotState.Empty)
+				break;
+			i++;
+		}
+		return i;
+	}
+
+	public void RequestRematch(bool status){
+		Debug.Log ("Requesting Rematch Status = " + status);
+		if (SC_MenuGlobals.Instance.unityObjects ["Text_RestartMatch"].GetComponent<Text> ().text == "requested")
+			RestartMatchLogic ();
+		if (status) {
+			Dictionary<string,object> _toSend = new Dictionary<string, object> ();
+			_toSend.Add ("UserName", SC_MenuGlobals.userName);
+			_toSend.Add ("Rematch", "True");
+			string _jsonToSend = MiniJSON.Json.Serialize (_toSend);
+			Debug.Log (_jsonToSend);
+			WarpClient.GetInstance ().sendMove (_jsonToSend);
+			SC_MenuGlobals.Instance.unityObjects ["Text_RestartMatch"].GetComponent<Text> ().text = "requested";
+		}
+	}
+
+	public void onUserLeftRoom (){
+		WarpClient.GetInstance ().stopGame ();
+		SC_MenuController.Instance.LeaveGame ();
+	}
+
+		
 }

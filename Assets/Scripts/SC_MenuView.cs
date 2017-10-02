@@ -15,15 +15,20 @@ public class SC_MenuView : MonoBehaviour
 		}
 	}
 
+	void Awake(){
+		DontDestroyOnLoad (transform.gameObject);
+	}
+
 	public void SetInfoText(string _TextToShow)
 	{
-		SC_MenuGlobals.Instance.unityObjects ["Screen_Loading_Title"].GetComponent<Text> ().text = _TextToShow;
 		Debug.Log("Text_Info " + _TextToShow);
+		SC_MenuGlobals.Instance.unityObjects ["Screen_Loading_Title"].GetComponent<Text> ().text = _TextToShow;
 	}
 
 	public void SetUserId(string _UserId)
 	{
-		SC_MenuGlobals.Instance.unityObjects ["Screen_Loading_Title"].GetComponent<Text> ().text = "User Id:" + _UserId;
 		Debug.Log("User Id:" + _UserId);
+		SC_MenuGlobals.Instance.unityObjects ["Screen_Loading_Title"].GetComponent<Text> ().text = "User Id:" + _UserId;
+
 	}
 }
