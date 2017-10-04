@@ -46,7 +46,6 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-     <Compile Include="Assets\Scripts\Cube.cs" />
      <Compile Include="Assets\Scripts\DefinedVariables.cs" />
      <Compile Include="Assets\Scripts\GameEnums.cs" />
      <Compile Include="Assets\Scripts\Listener.cs" />
